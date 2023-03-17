@@ -3,6 +3,7 @@ import 'dart:developer';
 import 'package:hunelco_test/features/movie/data/the_movie_db_repository.dart';
 import 'package:hunelco_test/features/movie/domain/movie.dart';
 import 'package:hunelco_test/features/movie/domain/movie_detailed.dart';
+import 'package:infinite_scroll_pagination/infinite_scroll_pagination.dart';
 import 'package:riverpod/riverpod.dart';
 
 final movieControllerProvider = StateNotifierProvider.autoDispose<MovieContoller, void>((ref) {
@@ -30,6 +31,23 @@ class MovieContoller extends StateNotifier<void> {
     } catch (e, s) {
       log(e.toString(), stackTrace: s);
       return null;
+    }
+  }
+
+  Future<void> fetchPage({required int pageKey, required String query, required PagingController pagingController}) async {
+    try {
+      const pageSize = 20;
+
+      final newItems = await getMoviesByQuery(page: pageKey, query: query);
+      final isLastPage = newItems.length < pageSize;
+      if (isLastPage) {
+        pagingController.appendLastPage(newItems);
+      } else {
+        final nextPageKey = pageKey + newItems.length;
+        pagingController.appendPage(newItems, nextPageKey);
+      }
+    } catch (error) {
+      pagingController.error = error;
     }
   }
 }

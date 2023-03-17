@@ -15,38 +15,24 @@ class MovieHomeScreen extends ConsumerStatefulWidget {
 class _MovieHomeScreenState extends ConsumerState<MovieHomeScreen> {
   final TextEditingController controller = TextEditingController();
 
-  static const _pageSize = 20;
-
   final PagingController<int, Movie> _pagingController = PagingController(firstPageKey: 1);
 
   @override
   void initState() {
     _pagingController.addPageRequestListener((pageKey) {
-      _fetchPage(pageKey);
+      ref
+          .read(movieControllerProvider.notifier)
+          .fetchPage(pageKey: pageKey, pagingController: _pagingController, query: controller.text);
     });
     super.initState();
-  }
-
-  Future<void> _fetchPage(int pageKey) async {
-    try {
-      final newItems =
-          await ref.read(movieControllerProvider.notifier).getMoviesByQuery(page: pageKey, query: controller.text);
-      final isLastPage = newItems.length < _pageSize;
-      if (isLastPage) {
-        _pagingController.appendLastPage(newItems);
-      } else {
-        final nextPageKey = pageKey + newItems.length;
-        _pagingController.appendPage(newItems, nextPageKey);
-      }
-    } catch (error) {
-      _pagingController.error = error;
-    }
   }
 
   @override
   void dispose() {
     _pagingController.removePageRequestListener((pageKey) {
-      _fetchPage(pageKey);
+      ref
+          .read(movieControllerProvider.notifier)
+          .fetchPage(pageKey: pageKey, pagingController: _pagingController, query: controller.text);
     });
     _pagingController.dispose();
     super.dispose();
@@ -87,7 +73,6 @@ class _MovieHomeScreenState extends ConsumerState<MovieHomeScreen> {
           leading: const Icon(Icons.menu)),
       body: PagedListView<int, Movie>(
         pagingController: _pagingController,
-        cacheExtent: 10,
         builderDelegate: PagedChildBuilderDelegate<Movie>(
           itemBuilder: (context, movie, index) => MovieCard(movie: movie),
         ),
